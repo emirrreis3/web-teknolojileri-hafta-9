@@ -1,4 +1,4 @@
-# Kampüs Etkinlik Rehberi — Express & MongoDB REST API (Sprint 8)
+# Kampüs Etkinlik Rehberi — Express & MongoDB REST API (Sprint 9)
 
 Bu servis, Kampüs Etkinlik Rehberi frontend uygulamasının bağlanacağı Node.js + Express + MongoDB (Mongoose ORM) tabanlı kalıcı veri katmanına sahip REST API backend servisidir.
 
@@ -53,11 +53,12 @@ MONGODB_URI=mongodb+srv://<kullanici>:<sifre>@cluster0.ab12c.mongodb.net/kampus?
 | Method | Yol (Path) | Açıklama | Başarılı Durum Kodu | Hata Durum Kodu | Gövde (Body) / Parametre |
 |---|---|---|---|---|---|
 | `GET` | `/health` | Sağlık kontrolü ve öğrenci no | `200 OK` | - | - |
-| `GET` | `/events` | MongoDB'deki tüm etkinlikler (kategori filtresi: `?category=Atölye`) | `200 OK` | `500` | Query: `category` (opsiyonel) |
-| `GET` | `/events/:id` | Tek etkinlik detayı | `200 OK` | `404 Not Found` | Parametre: `:id` (Geçersiz format veya bulunamayan ID 404 döner, asla 500 dönmez) |
-| `POST` | `/events` | Yeni etkinlik ekleme | `201 Created` | `400 Bad Request` | JSON Body: `title`, `category`, `capacity` (min: 1), `date`, `time`, `location`, `description` |
-| `PUT` | `/events/:id` | Etkinlik güncelleme | `200 OK` | `400 / 404` | Parametre: `:id`, JSON Body: Güncellenecek alanlar |
-| `DELETE` | `/events/:id` | Etkinlik silme | `200 OK` | `404` | Parametre: `:id` |
+| `GET` | `/events` | MongoDB'deki etkinlikler | `200 OK` | `500` | Query: `?search=atölye` & `?category=Atölye` (opsiyonel) |
+| `GET` | `/events/upcoming` | Yaklaşan etkinlikler (bugün ve sonrası, tarihe göre sıralı) | `200 OK` | `500` | - |
+| `GET` | `/events/:id` | Tek etkinlik detayı | `200 OK` | `404 Not Found` | Parametre: `:id` (Geçersiz format veya bulunamayan ID 404 döner) |
+| `POST` | `/events` | Yeni etkinlik ekleme | `201 Created` | `400 Bad Request` | JSON Body: `title`, `category`, `capacity` (min: 1), `date` ("GG-AA-YYYY"), `time`, `location`, `description` |
+| `PATCH` | `/events/:id` | Kısmi etkinlik güncelleme (çalışıyor) | `200 OK` (güncel kayıt) | `400 / 404` | Parametre: `:id`, JSON Body: Güncellenecek alanlar |
+| `DELETE` | `/events/:id` | Etkinlik silme (çalışıyor) | `204 No Content` (gövde yok) | `404 Not Found` | Parametre: `:id` |
 
 ### Hata Yanıt Formatı (400 / 404)
 ```json
@@ -70,14 +71,14 @@ MONGODB_URI=mongodb+srv://<kullanici>:<sifre>@cluster0.ab12c.mongodb.net/kampus?
 
 ---
 
-## Postman Testleri
+## Postman & Newman Testleri
 
-Hazır Postman koleksiyonu `backend/requests/kampus-api.json` yolunda bulunmaktadır.
+Sprint 9 otomatik test koleksiyonu: `https://webdersi.vercel.app/test.json`
 
-Koleksiyon içindeki test istekleri:
-1. `GET http://localhost:3000/health` (200 OK - `student: 2416501048`)
-2. `GET http://localhost:3000/events` (200 OK - MongoDB etkinlik listesi)
-3. `GET http://localhost:3000/events/:id` (200 OK - Geçerli `_id` ile etkinlik detayı)
-4. `GET http://localhost:3000/events/yok` (404 Not Found - Hatalı formatta ID)
-5. `POST http://localhost:3000/events` (201 Created - Tam gövdeli etkinlik)
-6. `POST http://localhost:3000/events` (400 Bad Request - Eksik zorunlu alanlar, sunucu çökmez)
+Terminal üzerinden testleri koşturmak için:
+```bash
+newman run https://webdersi.vercel.app/test.json
+```
+
+Toplam 18 istek ve 45 test assertion'ı içermektedir (Tüm testler yeşil / passed).
+Test sonuçları `backend/requests/run-results.json` dosyasına kaydedilmiştir.

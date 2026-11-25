@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { formatDate, parseDate } from "../utils/date.js";
 
 const eventSchema = new mongoose.Schema(
   {
@@ -10,6 +11,10 @@ const eventSchema = new mongoose.Schema(
     category: {
       type: String,
       required: [true, "category alanı zorunludur"],
+      enum: {
+        values: ["Seminer", "Atölye", "Söyleşi", "Yarışma"],
+        message: "{VALUE} geçerli bir kategori değil"
+      },
       trim: true
     },
     capacity: {
@@ -18,9 +23,10 @@ const eventSchema = new mongoose.Schema(
       min: [1, "capacity en az 1 olmalıdır"]
     },
     date: {
-      type: String,
+      type: Date,
       required: [true, "date alanı zorunludur"],
-      trim: true
+      set: parseDate,
+      get: formatDate
     },
     time: {
       type: String,
@@ -39,7 +45,10 @@ const eventSchema = new mongoose.Schema(
     }
   },
   {
-    timestamps: true
+    timestamps: true,
+    toJSON: { getters: true },
+    toObject: { getters: true },
+    id: false
   }
 );
 

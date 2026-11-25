@@ -1,5 +1,9 @@
+import path from "path";
+import { fileURLToPath } from "url";
 import dotenv from "dotenv";
-dotenv.config();
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+dotenv.config({ path: path.resolve(__dirname, "../.env") });
 
 import connectDB from "./config/database.js";
 import Event from "./models/event-model.js";
