@@ -1,7 +1,8 @@
-# Web Teknolojileri — Vize Projesi (Sprint 9)
-**Router, Context ve Yönetim (18 Adım)**
+# Web Teknolojileri — Kampüs Etkinlik Rehberi (Sprint 9)
+**Tam CRUD (PATCH, DELETE), Tarih Formatı (GG-AA-YYYY), Arama & Yaklaşan Etkinlikler**
 
-**Canlı Dağıtım (Vercel):** ((https://web-teknolojileri-hafta-9.vercel.app/))  
+* **Canlı Dağıtım (Vercel):** [https://web-teknolojileri-hafta-9.vercel.app/](https://web-teknolojileri-hafta-9.vercel.app/)
+* **GitHub Reposu:** [https://github.com/emirrreis3/web-teknolojileri-hafta-9](https://github.com/emirrreis3/web-teknolojileri-hafta-9)
 
 ---
 
@@ -15,74 +16,84 @@
 
 ---
 
-## Proje Tanımı ve Hedefleri
-Bu proje, tek sayfalık uygulamayı (SPA) React Router DOM v7 ve React Context API kullanarak dinamik, yönetilebilir ve tam erişilebilir gerçek web adreslerine kavuşturmaktadır:
-1. **React Router DOM (BrowserRouter, Routes, Route, Link, NavLink, useParams, useNavigate, useLocation):** Sayfalar arası geçişlerde tarayıcı geçmişi, geri/ileri butonları ve doğrudan URL ile erişim desteklenir.
-2. **Global State Yönetimi (EventsContext & EventsProvider):** Etkinlik verisi, ekleme (`addEvent`), güncelleme (`updateEvent`) ve silme (`deleteEvent`) işlemleri tek merkezde toplanarak tüm sayfalara (Ana Sayfa, Etkinlikler, Detay, Yönetim) prop drilling olmadan anında yansıtılır.
-3. **Controlled Formlar ve Doğrulama (Validation):** Etkinlik ekleme/güncelleme formu ile Giriş, Kayıt ve Şifremi Unuttum formları iki yönlü veri bağlama (controlled components) ve saf doğrulama fonksiyonları (`validateEvent`, vb.) ile donatılmıştır. Hatalar anlık olarak görsel ve erişilebilir (`aria-invalid`, `.hata-metni`) şekilde sunulur.
-4. **Yönetim Paneli (Admin CRUD):** Etkinliklerin tablo halinde listelenmesi, yeni etkinlik ekleme, var olanı güncelleme ve silmeden önce onay kutusu (`window.confirm`) ile güvenli silme imkânı.
-5. **Duyarlı (Responsive) Tasarım:** Masaüstünde 3 ve 2 sütunlu grid, geniş tablo; mobil ekranlarda (<=699px) ise tablonun `data-baslik` ile otomatik olarak modern kart görünümüne dönüşmesi.
+## Sprint 9 Yenilikleri ve Kazanımları
+
+1. **Tam REST CRUD Döngüsü:**
+   - `PATCH /events/:id`: Kısmi güncelleme (partial update). Sadece iletilen alanları günceller (`returnDocument: "after"` ve `runValidators: true`). Boş gövde (`{}`) ve korunan alanlar (`_id`, `createdAt`, `updatedAt`, `__v`) için `400 Bad Request`, bulunamayan ID için `404 Not Found` döner.
+   - `DELETE /events/:id`: Belirtilen etkinliği veritabanından kalıcı olarak siler ve `204 No Content` (boş gövde) döner. İkinci kez silinmek istendiğinde `404 Not Found` döner.
+2. **Tarih Standardizasyonu (`GG-AA-YYYY`):**
+   - API ve JSON yanıtlarında `"15-10-2026"` formatı kullanılırken, MongoDB katmanında gerçek UTC `Date` tipi olarak saklanır.
+   - `parseDate` ve `formatDate` yardımcı fonksiyonları ile şemada otomatik `setter` ve `getter` mekanizması işletilir. Hatalı tarih formatlarında sunucu çökmeden `400 Bad Request` döner.
+3. **Arama ve Filtreleme (`GET /events?search=&category=`):**
+   - Query string üzerinden metin araması (özel regex karakterleri kaçırılarak, büyük/küçük harf duyarsız `$options: "i"`) ve kategori filtrelemesi desteklenir.
+4. **Yaklaşan Etkinlikler (`GET /events/upcoming`):**
+   - Express router sırasında `/:id`'den önce tanımlanarak çakışma önlenmiştir.
+   - `$gte: todayStart()` filtresi ile sadece bugünün ve geleceğin etkinlikleri artan tarihe göre listelenir; geçmiş etkinlikler elenir.
+5. **Otomatik Newman Testleri:**
+   - 18 istek ve 45 test assertion'ının tamamı yeşil (`0 Failed, %100 Başarı`).
+   - Sonuçlar `backend/requests/run-results.json` dosyasına kaydedilmiştir.
 
 ---
 
-## Route (Adres) Haritası (10 Adet Sayfa)
+## REST API Sözleşmesi
 
-| # | Adres | Sayfa Bileşeni | Açıklama |
-|---|-------|----------------|----------|
-| 1 | `/` | `HomePage` | Yaklaşan ilk 2 etkinliği tarihe göre sıralı listeler, "Tüm etkinlikleri gör" butonu barındırır. |
-| 2 | `/events` | `EventsPage` | Arama ve kategori filtreleme ile tüm etkinlikleri listeler; sonuç sayısını gösterir. |
-| 3 | `/events/:id` | `EventDetailPage` | `useParams` ile id'yi okur, etkinliğin afişini, künyesini (`dl`) ve açıklamasını sunar. |
-| 4 | `/admin` | `AdminPage` | Yönetim tablosu; etkinlikleri listeler, "Düzenle" ve onaylı "Sil" butonları içerir. |
-| 5 | `/admin/new` | `AddEventPage` | Yeni etkinlik ekleme formu (`EventForm`), kayıt sonrası `/admin`'e yönlendirir. |
-| 6 | `/admin/:id/edit` | `EditEventPage` | Seçili etkinliği güncelleme formu (`EventForm`), kayıt sonrası `/admin`'e yönlendirir. |
-| 7 | `/login` | `LoginPage` | E-posta ve şifre doğrulamalı giriş sayfası. |
-| 8 | `/register` | `RegisterPage` | Ad Soyad, e-posta, şifre ve şifre tekrarı doğrulamalı kayıt sayfası. |
-| 9 | `/forgot-password` | `ForgotPasswordPage` | Şifre sıfırlama e-posta gönderim simülasyonu. |
-| 10 | `*` | `NotFoundPage` | Tanımsız adresler veya bulunamayan etkinlikler için 404 sayfası ve ana sayfaya dönüş butonu. |
+| Method | Yol (Path) | Açıklama | Başarılı Durum | Hata Durumu | Gövde (Body) / Parametre |
+|---|---|---|---|---|---|
+| `GET` | `/health` | Sağlık kontrolü ve öğrenci no | `200 OK` | — | — |
+| `GET` | `/events` | Etkinlik listesi (arama ve kategori filtresi) | `200 OK` | `500` | Query: `?search=atölye` & `?category=Atölye` |
+| `GET` | `/events/upcoming` | Yaklaşan etkinlikler (en yakın önce) | `200 OK` | `500` | — |
+| `GET` | `/events/:id` | Tek etkinlik detayı | `200 OK` | `404 Not Found` | Parametre: `:id` |
+| `POST` | `/events` | Yeni etkinlik oluşturma | `201 Created` | `400 Bad Request` | JSON Body: `title`, `category`, `capacity`, `date`, `time`, `location`, `description` |
+| `PATCH` | `/events/:id` | Kısmi etkinlik güncelleme | `200 OK` | `400 / 404` | Parametre: `:id`, JSON Body: Güncellenecek alanlar |
+| `DELETE` | `/events/:id` | Etkinlik silme | `204 No Content` | `404 Not Found` | Parametre: `:id` |
+
+### Hata Yanıt Formatı (400 / 404)
+```json
+{
+  "error": {
+    "message": "Event not found"
+  }
+}
+```
 
 ---
 
-## Proje Klasör Yapısı (`src/`)
+## Proje Klasör Yapısı
 
 ```
-src/
-├── components/
-│   ├── layout/
-│   │   ├── Header.tsx        # Adrese ve seçili etkinliğe göre dinamik başlık ve alt açıklama
-│   │   ├── Navigation.tsx    # NavLink ile aktif sayfayı vurgulayan menü
-│   │   └── Footer.tsx        # Öğrenci künyesi (Emir Demir · 2416501048 · 2026)
-│   ├── events/
-│   │   ├── EventCard.tsx     # Tekil etkinlik kartı (/events/:id bağlantılı)
-│   │   ├── EventList.tsx     # Etkinlikleri map eden liste ve boş durum yönetimi
-│   │   ├── EventFilter.tsx   # Etkinlik arama ve kategori seçici bileşeni
-│   │   └── EventDetail.tsx   # Etkinlik afişi, künyesi ve geri/güncelle butonları
-│   └── forms/
-│       └── EventForm.tsx     # Ekle ve Güncelle sayfalarında kullanılan controlled form
-├── context/
-│   └── EventsContext.tsx     # EventsProvider ve useEvents custom hook (CRUD operasyonları)
-├── pages/
-│   ├── HomePage.tsx          # Ana sayfa (yaklaşan 2 etkinlik)
-│   ├── EventsPage.tsx        # Etkinlikler listesi ve arama/filtreleme
-│   ├── EventDetailPage.tsx    # Tekil etkinlik detay sayfası (useParams)
-│   ├── AdminPage.tsx         # Etkinlik yönetim tablosu (+ yeni etkinlik, düzenle, sil)
-│   ├── AddEventPage.tsx      # Yeni etkinlik ekleme sayfası
-│   ├── EditEventPage.tsx     # Etkinlik güncelleme sayfası
-│   ├── LoginPage.tsx         # Giriş sayfası (doğrulamalı)
-│   ├── RegisterPage.tsx      # Kayıt sayfası (doğrulamalı)
-│   ├── ForgotPasswordPage.tsx# Şifremi unuttum sayfası
-│   └── NotFoundPage.tsx      # 404 Sayfa bulunamadı bileşeni
-├── data/
-│   └── events.ts             # 6 adet kanonik örnek etkinlik verisi
-├── types/
-│   └── campus-event.ts       # Category, CampusEvent, EventFormData, EventFormErrors tipleri
-├── utils/
-│   ├── filter-events.ts      # searchEvents, filterByCategory ve findEventById yardımcıları
-│   ├── format-date.ts        # Türkçe yerel tarih formatlayıcı
-│   └── validate-event.ts     # Etkinlik formu saf doğrulama fonksiyonu
-├── App.css                   # Emir Demir özel stil tonu (--ton: 328), responsive ve tema kuralları
-├── App.tsx                   # Ana iskelet (Header, Navigation, Routes, Footer)
-├── index.css                 # Temel kök stiller
-└── main.tsx                  # BrowserRouter ve EventsProvider sarmalayıcıları
+web-teknolojileri-sprint-9/
+├── backend/
+│   ├── src/
+│   │   ├── config/
+│   │   │   └── database.js       # Mongoose MongoDB Atlas bağlantısı
+│   │   ├── controllers/
+│   │   │   └── event-controller.js # CRUD & arama/filtreleme controller mantığı
+│   │   ├── data/
+│   │   │   └── seed-events.js    # 6 başlangıç etkinliği (2 geçmiş tarihli)
+│   │   ├── models/
+│   │   │   └── event-model.js    # Event Mongoose şeması (Date getter/setter, enum)
+│   │   ├── routes/
+│   │   │   └── event-routes.js   # Route tanımları (/upcoming önce, PATCH, DELETE)
+│   │   ├── utils/
+│   │   │   └── date.js           # parseDate, formatDate, todayStart yardımcıları
+│   │   ├── app.js                # Express konfigürasyonu ve hata middleware'i
+│   │   ├── seed.js               # İdempotent veritabanı tohumlama scripti
+│   │   └── server.js             # Sunucu başlatıcı (Port 3000)
+│   ├── requests/
+│   │   ├── kampus-api.json       # Sprint 9 Postman test koleksiyonu
+│   │   └── run-results.json      # Newman 45 test 0 hata çalıştırma raporu
+│   ├── README.md                 # Backend özel dokümantasyonu
+│   └── package.json
+├── src/                          # Frontend React + TypeScript kaynak kodları
+│   ├── components/               # UI bileşenleri (EventCard, EventList, EventFilter, Header, Navigation vb.)
+│   ├── context/                  # React Context API global state yönetimi
+│   ├── pages/                    # 10 adet sayfa bileşeni (Home, Events, Detail, Admin, Login vb.)
+│   ├── types/                    # TypeScript arayüz ve tip tanımları
+│   └── utils/                    # Frontend yardımcı fonksiyonları
+├── dist/                         # Üretim derlemesi (Production build)
+├── index.html                    # Ana HTML şablonu
+├── package.json
+└── README.md
 ```
 
 ---
@@ -91,49 +102,42 @@ src/
 
 Gereksinimler: **Node.js 18+** ve **npm**
 
+### 1. Backend Servisi
 ```bash
+cd backend
+
 # Bağımlılıkları yükleyin
 npm install
 
-# Geliştirme sunucusunu başlatın (http://localhost:5173)
+# Başlangıç verilerini veritabanına yükleyin (6 etkinlik)
+npm run seed
+
+# Geliştirme sunucusunu başlatın (http://localhost:3000)
 npm run dev
-
-# Üretim derlemesi oluşturun (TypeScript kontrolü ve Vite build)
-npm run build
-
-# Üretim derlemesini önizleyin
-npm run preview
-
-# Kod denetimi (Linter)
-npm run lint
 ```
+
+### 2. Frontend Uygulaması
+```bash
+# Proje ana dizininde:
+npm install
+npm run dev
+```
+Geliştirme sunucusu `http://localhost:5173` adresinde çalışır.
 
 ---
 
-## Git ve Vize Teslim Adımları
+## Testleri Çalıştırma (Newman CLI)
+
+Backend sunucusu çalışırken (`http://localhost:3000`):
 
 ```bash
-git add .
-git commit -m "Complete sprint 6 and midterm frontend"
-git tag frontend
-git push
-git push --tags
+newman run https://webdersi.vercel.app/test.json
 ```
 
----
-
-## Vize Teslim Kontrol Listesi (13/13 Madde Tamamlandı)
-
-- [x] **1. Tüm linkler çalışıyor:** NavLink menüsü, kart detay linkleri, geri dönüş ve aksiyon linkleri test edildi.
-- [x] **2. Tüm sayfalar hazır:** 10 sayfanın tümü eksiksiz uygulandı.
-- [x] **3. Klasör ve dosya yapısı oluşturuldu:** Sunumdaki `components`, `context`, `pages`, `types`, `utils` yapısı birebir kuruldu.
-- [x] **4. Tüm route'lar (10 adet) tanımlandı:** `Routes` içinde 10 yol yapılandırıldı.
-- [x] **5. Context kullanıldı ve gerekli tüm sayfalara bağlandı:** `EventsProvider` ve `useEvents` hook'u entegre edildi.
-- [x] **6. Ekle, sil, güncelle ve silmeden önce onay çalışıyor:** Tabloda düzenleme, ekleme ve `window.confirm` ile silme işlemleri sorunsuz çalışmakta; durum değişiklikleri Ana Sayfa ve Etkinlikler ekranlarına anında yansımaktadır.
-- [x] **7. Son çalışır proje GitHub'a gönderildi:** Git geçmişi, commit ve `frontend` tag'i hazırlandı.
-- [x] **8. Proje Vercel'de yayında:** `https://emirdemir-frontend.vercel.app` adresiyle canlıya alındı.
-- [x] **9. README yazıldı, Vercel linki eklendi:** Tüm yönergeler ve canlı Vercel linki README'ye eklendi.
-- [x] **10. Mobil görünüm doğru çalışıyor:** Tablo mobil ekranda (<=699px) kart formatına bürünmektedir (`data-baslik`).
-- [x] **11. CSS bozulması yok:** Renk paleti, tipografi, flex/grid hizalamaları ve responsive kırılmalar kusursuzdur.
-- [x] **12. Arama ve filtreleme çalışıyor:** Türkçe karakter duyarlı arama ve kategoriye göre filtreleme işlevseldir.
-- [x] **13. Form doğrulama çalışıyor:** Etkinlik formu, Giriş, Kayıt ve Şifremi Unuttum formlarında tüm kurallar denetlenmektedir.
+**Sonuç Özeti:**
+```
+Iterations: 1/1
+Requests: 18/18
+Assertions: 45/45 (0 Failed, 0 Error, %100 Başarı)
+```
+Tüm testler yeşil tik ile doğrulanmıştır.
