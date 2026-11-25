@@ -1,4 +1,4 @@
-# Web Teknolojileri — Vize Projesi (Sprint 6)
+# Web Teknolojileri — Vize Projesi (Sprint 9)
 **Router, Context ve Yönetim (18 Adım)**
 
 **Canlı Dağıtım (Vercel):** ((https://web-teknolojileri-hafta-9.vercel.app/))  
